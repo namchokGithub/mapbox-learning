@@ -38,7 +38,7 @@ mapbox-learning/
 ```bash
 cd backend
 cp .env.example .env
-# fill MAPBOX_TOKEN in .env
+# fill MAPBOX_SECRET_TOKEN in .env
 go run ./cmd/server
 ```
 
@@ -66,7 +66,7 @@ Mapbox provides two token types:
 | Secret token | `sk.*` | Backend `.env` only — never in frontend |
 
 **Frontend** uses `VITE_MAPBOX_PUBLIC_TOKEN` (`pk.*`) for map rendering only.  
-**Backend** uses `MAPBOX_TOKEN` (`sk.*`) for proxying geocoding/directions APIs.
+**Backend** uses `MAPBOX_SECRET_TOKEN` (`sk.*`) for proxying geocoding/directions APIs.
 
 Never commit `.env` files. `.env.example` files are safe to commit.
 
@@ -82,6 +82,32 @@ Frontend (Vite React)
 
 Frontend uses a public Mapbox token (`pk.*`) only for rendering the map via mapbox-gl.  
 All business API calls (geocoding, directions) go through the Go backend, which holds the secret token (`sk.*`).
+
+## Routing Architecture
+
+```
+Browser click (lat/lng)
+        ↓
+  RouteView.tsx (frontend)
+        ↓  GET /api/directions?fromLng=...&fromLat=...&toLng=...&toLat=...
+  Go backend (Chi)
+        ↓  GET https://api.mapbox.com/directions/v5/mapbox/driving/...
+  Mapbox Directions API
+        ↓
+  GeoJSON LineString route
+```
+
+**Frontend responsibilities:** map rendering, click interaction, route drawing (GeoJSON layer), info panel display.
+
+**Backend responsibilities:** coordinate validation, Mapbox API proxy, response formatting.
+
+**Token separation:**
+- Frontend uses `VITE_MAPBOX_PUBLIC_TOKEN` (`pk.*`) — map rendering only
+- Backend uses `MAPBOX_SECRET_TOKEN` (`sk.*`) — Directions API proxy
+
+**Cost considerations:** Route fetched only after two points selected — one request per route. No polling.
+
+**Straight-line vs real-road:** `MapView` shows straight-line distance (Haversine). `RouteView` fetches real road distance and drive time from Mapbox.
 
 ## Learning Flow
 

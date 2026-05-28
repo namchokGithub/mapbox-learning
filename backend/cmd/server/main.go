@@ -10,6 +10,8 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/namchok/mapbox-learning/internal/handlers"
+	"github.com/namchok/mapbox-learning/internal/mapbox"
+	"github.com/namchok/mapbox-learning/internal/services"
 )
 
 func main() {
@@ -22,10 +24,19 @@ func main() {
 		port = "8080"
 	}
 
+	mapboxToken := os.Getenv("MAPBOX_SECRET_TOKEN")
+	if mapboxToken == "" {
+		log.Fatal("MAPBOX_SECRET_TOKEN is required")
+	}
+
+	mapboxClient := mapbox.NewClient(mapboxToken)
+	directionsService := services.NewDirectionsService(mapboxClient)
+	directionsHandler := handlers.NewDirectionsHandler(directionsService)
+
 	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RequestID)
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173", "http://127.0.0.1:5173"},
@@ -37,6 +48,7 @@ func main() {
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/health", handlers.Health)
+		api.Get("/directions", directionsHandler.GetDirections)
 	})
 
 	log.Printf("server listening on :%s", port)

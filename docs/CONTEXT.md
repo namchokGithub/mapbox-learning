@@ -67,12 +67,14 @@ mapbox-learning/
 ├── frontend/                   ← Vite React TypeScript app
 │   ├── src/
 │   │   ├── components/
-│   │   │   └── MapView.tsx     ← mapbox-gl map component (NavigationControl, token)
+│   │   │   ├── MapView.tsx     ← straight-line distance measurement
+│   │   │   └── RouteView.tsx   ← real-road routing, directions, route drawing
 │   │   ├── hooks/              ← custom React hooks (empty, ready)
 │   │   ├── pages/
-│   │   │   └── MapPage.tsx     ← full-screen map page
+│   │   │   ├── MapPage.tsx     ← distance measure page
+│   │   │   └── RoutePage.tsx   ← route planning page
 │   │   ├── types/              ← TypeScript types (empty, ready)
-│   │   ├── App.tsx             ← renders MapPage
+│   │   ├── App.tsx             ← page state navigation (map | route)
 │   │   └── main.tsx
 │   ├── .env.example
 │   └── package.json
@@ -97,11 +99,11 @@ mapbox-learning/
 
 | Method | Path      | Status | Description          |
 |--------|-----------|--------|----------------------|
-| GET    | /health   | done   | health check         |
+| GET    | /api/health      | done   | health check                |
+| GET    | /api/directions  | done   | proxy Mapbox Directions API |
 
 Next endpoints to implement (follow learning flow order):
 - GET /api/geocode?q=... — proxy Mapbox geocoding
-- GET /api/directions?from=...&to=... — proxy Mapbox directions
 
 ---
 
@@ -117,7 +119,7 @@ VITE_API_BASE_URL=http://localhost:8080
 ## Backend (`backend/.env`)
 
 ```env
-MAPBOX_TOKEN=your_mapbox_token_here
+MAPBOX_SECRET_TOKEN=sk.your_secret_token_here
 PORT=8080
 ```
 
@@ -232,12 +234,12 @@ Handler → Service → Mapbox Client → Mapbox API
 | Step | Feature              | Status  |
 |------|----------------------|---------|
 | 1    | Render Map           | done    |
-| 2    | Add Marker           | pending |
-| 3    | Click Events         | pending |
+| 2    | Add Marker           | done    |
+| 3    | Click Events         | done    |
 | 4    | Search Location      | pending |
 | 5    | Geocoding            | pending |
-| 6    | Route Directions     | pending |
-| 7    | Draw Route           | pending |
+| 6    | Route Directions     | done    |
+| 7    | Draw Route           | done    |
 | 8    | Current Location     | pending |
 | 9    | Save Route           | pending |
 | 10   | Optimize API Usage   | pending |
