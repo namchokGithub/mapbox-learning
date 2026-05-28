@@ -49,10 +49,26 @@ Health check: `GET http://localhost:8080/health`
 ```bash
 cd frontend
 cp .env.example .env
-# fill VITE_MAPBOX_TOKEN in .env
+# fill VITE_MAPBOX_PUBLIC_TOKEN with your pk.* token
 pnpm install
 pnpm dev
 ```
+
+Open: http://localhost:5173
+
+## Token Setup
+
+Mapbox provides two token types:
+
+| Token | Prefix | Where |
+|---|---|---|
+| Public token | `pk.*` | Frontend `.env` — safe to expose in browser |
+| Secret token | `sk.*` | Backend `.env` only — never in frontend |
+
+**Frontend** uses `VITE_MAPBOX_PUBLIC_TOKEN` (`pk.*`) for map rendering only.  
+**Backend** uses `MAPBOX_TOKEN` (`sk.*`) for proxying geocoding/directions APIs.
+
+Never commit `.env` files. `.env.example` files are safe to commit.
 
 ## Architecture
 
@@ -64,16 +80,36 @@ Frontend (Vite React)
    Mapbox APIs
 ```
 
-Frontend never calls Mapbox directly. All API calls go through the Go backend.
+Frontend uses a public Mapbox token (`pk.*`) only for rendering the map via mapbox-gl.  
+All business API calls (geocoding, directions) go through the Go backend, which holds the secret token (`sk.*`).
 
 ## Learning Flow
 
 1. Render Map
 2. Add Marker
 3. Click Events
-4. Search Location (Geocoding)
-5. Route Directions
-6. Draw Route on Map
-7. Current Location (Geolocation)
-8. Save Route
-9. Optimize API Usage
+4. Straight-line Distance Measure
+5. Search Location (Geocoding)
+6. Route Directions
+7. Draw Route on Map
+8. Current Location (Geolocation)
+9. Save Route
+10. Optimize API Usage
+
+## Distance Measurement
+
+Frontend includes lightweight distance measurement inside `MapView` using `mapbox-gl` only.
+
+- First click places point A
+- Second click places point B, draws line, and shows distance in kilometers
+- Third click resets old measurement and starts new one
+
+Distance uses `LngLat.distanceTo()` for straight-line geometry on client side. This keeps feature frontend-only and avoids Directions API calls, backend traffic, and extra Mapbox request costs.
+
+## Distance Limitation
+
+Measured value is straight-line distance, not road distance or travel distance.
+
+- Good for quick geometry checks
+- Not suitable for turn-by-turn routing
+- Real road distance will require Directions API later

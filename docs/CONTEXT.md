@@ -67,7 +67,7 @@ mapbox-learning/
 ├── frontend/                   ← Vite React TypeScript app
 │   ├── src/
 │   │   ├── components/
-│   │   │   └── Map.tsx         ← mapbox-gl map component (NavigationControl)
+│   │   │   └── MapView.tsx     ← mapbox-gl map component (NavigationControl, token)
 │   │   ├── hooks/              ← custom React hooks (empty, ready)
 │   │   ├── pages/
 │   │   │   └── MapPage.tsx     ← full-screen map page
@@ -110,7 +110,7 @@ Next endpoints to implement (follow learning flow order):
 ## Frontend (`frontend/.env`)
 
 ```env
-VITE_MAPBOX_TOKEN=your_mapbox_token_here
+VITE_MAPBOX_PUBLIC_TOKEN=pk.your_public_token_here
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
