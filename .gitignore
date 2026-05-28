@@ -152,4 +152,6 @@ vite.config.ts.timestamp-*
 
 # Go
 backend/bin/
+backend/tmp/
 *.exe
+backend/server

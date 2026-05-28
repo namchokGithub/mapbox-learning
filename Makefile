@@ -3,8 +3,10 @@
 dev:
 	$(MAKE) -j2 api web
 
+AIR := $(shell go env GOPATH)/bin/air
+
 api:
-	cd backend && go run ./cmd/server
+	cd backend && $(AIR)
 
 web:
 	cd frontend && pnpm dev
