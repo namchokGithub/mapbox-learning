@@ -6,13 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/namchok/mapbox-learning/internal/mapbox"
 	"github.com/namchok/mapbox-learning/internal/services"
 )
 
 // mockDirectionsService always returns success; never called for validation tests.
 type mockDirectionsService struct{}
 
-func (m *mockDirectionsService) GetDirections(_, _, _, _ float64) (*services.DirectionsResult, error) {
+func (m *mockDirectionsService) GetDirections(_ []mapbox.Coordinate) (*services.DirectionsResult, error) {
 	return nil, nil
 }
 
@@ -54,6 +55,23 @@ func TestGetDirections_OutOfRangeCoord(t *testing.T) {
 	h := NewDirectionsHandler(&mockDirectionsService{})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/directions?fromLng=200", nil)
+	rec := httptest.NewRecorder()
+
+	h.GetDirections(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rec.Code)
+	}
+}
+
+func TestGetDirections_InvalidWaypoint(t *testing.T) {
+	h := NewDirectionsHandler(&mockDirectionsService{})
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/directions?fromLng=100&fromLat=13&toLng=101&toLat=14&waypoints=bad-value",
+		nil,
+	)
 	rec := httptest.NewRecorder()
 
 	h.GetDirections(rec, req)

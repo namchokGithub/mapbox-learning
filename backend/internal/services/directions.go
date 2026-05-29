@@ -25,9 +25,9 @@ func NewDirectionsService(client *mapbox.Client) *DirectionsService {
 	return &DirectionsService{client: client}
 }
 
-// GetDirections returns a formatted road route between two coordinate pairs.
-func (s *DirectionsService) GetDirections(fromLng, fromLat, toLng, toLat float64) (*DirectionsResult, error) {
-	route, err := s.client.GetDirections(fromLng, fromLat, toLng, toLat)
+// GetDirections returns a formatted road route for origin -> waypoints -> destination.
+func (s *DirectionsService) GetDirections(coords []mapbox.Coordinate) (*DirectionsResult, error) {
+	route, err := s.client.GetDirections(coords)
 	if err != nil {
 		return nil, err
 	}

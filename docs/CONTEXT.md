@@ -68,12 +68,18 @@ mapbox-learning/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── MapView.tsx     ← straight-line distance measurement
-│   │   │   └── RouteView.tsx   ← real-road routing, directions, route drawing
-│   │   ├── hooks/              ← custom React hooks (empty, ready)
+│   │   │   ├── RouteView.tsx   ← real-road routing, waypoints, action modes, simulation
+│   │   │   └── route-playground/
+│   │   │       ├── ActionModePanel.tsx        ← mode selector (select/origin/dest/waypoint/sim)
+│   │   │       ├── MockGpsPanel.tsx           ← mock GPS position controls
+│   │   │       └── VehicleSimulationPanel.tsx ← playback controls (1×/2×/4× speed)
+│   │   ├── hooks/
+│   │   │   └── useVehicleSimulation.ts ← animates marker along route with bearing
 │   │   ├── pages/
 │   │   │   ├── MapPage.tsx     ← distance measure page
 │   │   │   └── RoutePage.tsx   ← route planning page
-│   │   ├── types/              ← TypeScript types (empty, ready)
+│   │   ├── types/
+│   │   │   └── navigation.ts   ← shared types: ActionMode, MarkerPoint, RouteInfo, VehicleSimulationState
 │   │   ├── App.tsx             ← page state navigation (map | route)
 │   │   └── main.tsx
 │   ├── .env.example
@@ -83,9 +89,13 @@ mapbox-learning/
     │   └── main.go             ← entry point, chi router setup
     ├── internal/
     │   ├── handlers/
-    │   │   └── health.go       ← GET /health
-    │   ├── services/           ← business logic (empty, ready)
-    │   ├── mapbox/             ← Mapbox API client (empty, ready)
+    │   │   ├── health.go       ← GET /api/health
+    │   │   ├── directions.go   ← GET /api/directions
+    │   │   └── directions_test.go
+    │   ├── services/
+    │   │   └── directions.go   ← formats DirectionsResult
+    │   ├── mapbox/
+    │   │   └── client.go       ← Resty HTTP client, Coordinate type
     │   ├── middleware/         ← HTTP middleware (empty, ready)
     │   └── models/             ← data models (empty, ready)
     ├── go.mod
@@ -97,10 +107,10 @@ mapbox-learning/
 
 # Current API Endpoints
 
-| Method | Path      | Status | Description          |
-|--------|-----------|--------|----------------------|
-| GET    | /api/health      | done   | health check                |
-| GET    | /api/directions  | done   | proxy Mapbox Directions API |
+| Method | Path             | Status | Description                                        |
+|--------|------------------|--------|----------------------------------------------------|
+| GET    | /api/health      | done   | health check                                       |
+| GET    | /api/directions  | done   | proxy Mapbox Directions API; optional `waypoints=lng,lat;lng,lat` |
 
 Next endpoints to implement (follow learning flow order):
 - GET /api/geocode?q=... — proxy Mapbox geocoding

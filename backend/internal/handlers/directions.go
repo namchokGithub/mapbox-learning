@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"strconv"
 
+	"github.com/namchok/mapbox-learning/internal/mapbox"
 	"github.com/namchok/mapbox-learning/internal/services"
 )
 
 // directionsGetter is the service interface the handler depends on.
 // Using an interface enables testing without a real Mapbox token.
 type directionsGetter interface {
-	GetDirections(fromLng, fromLat, toLng, toLat float64) (*services.DirectionsResult, error)
+	GetDirections(coords []mapbox.Coordinate) (*services.DirectionsResult, error)
 }
 
 // DirectionsHandler handles GET /api/directions requests.
@@ -48,7 +50,20 @@ func (h *DirectionsHandler) GetDirections(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := h.service.GetDirections(fromLng, fromLat, toLng, toLat)
+	coords := []mapbox.Coordinate{
+		{Lng: fromLng, Lat: fromLat},
+	}
+
+	waypoints, err := parseWaypoints(r.URL.Query().Get("waypoints"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	coords = append(coords, waypoints...)
+	coords = append(coords, mapbox.Coordinate{Lng: toLng, Lat: toLat})
+
+	result, err := h.service.GetDirections(coords)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get directions"})
 		return
@@ -70,6 +85,36 @@ func parseCoord(r *http.Request, key string, min, max float64) (float64, error) 
 		return 0, fmt.Errorf("invalid value for %s: must be between %g and %g", key, min, max)
 	}
 	return f, nil
+}
+
+func parseWaypoints(raw string) ([]mapbox.Coordinate, error) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+
+	parts := strings.Split(raw, ";")
+	waypoints := make([]mapbox.Coordinate, 0, len(parts))
+
+	for index, part := range parts {
+		coordParts := strings.Split(strings.TrimSpace(part), ",")
+		if len(coordParts) != 2 {
+			return nil, fmt.Errorf("invalid waypoint at position %d: must be lng,lat", index+1)
+		}
+
+		lng, err := strconv.ParseFloat(coordParts[0], 64)
+		if err != nil || lng < -180 || lng > 180 {
+			return nil, fmt.Errorf("invalid waypoint longitude at position %d", index+1)
+		}
+
+		lat, err := strconv.ParseFloat(coordParts[1], 64)
+		if err != nil || lat < -90 || lat > 90 {
+			return nil, fmt.Errorf("invalid waypoint latitude at position %d", index+1)
+		}
+
+		waypoints = append(waypoints, mapbox.Coordinate{Lng: lng, Lat: lat})
+	}
+
+	return waypoints, nil
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

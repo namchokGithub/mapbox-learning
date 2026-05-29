@@ -90,6 +90,7 @@ Browser click (lat/lng)
         ↓
   RouteView.tsx (frontend)
         ↓  GET /api/directions?fromLng=...&fromLat=...&toLng=...&toLat=...
+        ↓  optional: &waypoints=lng,lat;lng,lat (semicolon-separated)
   Go backend (Chi)
         ↓  GET https://api.mapbox.com/directions/v5/mapbox/driving/...
   Mapbox Directions API
@@ -97,17 +98,19 @@ Browser click (lat/lng)
   GeoJSON LineString route
 ```
 
-**Frontend responsibilities:** map rendering, click interaction, route drawing (GeoJSON layer), info panel display.
+**Frontend responsibilities:** map rendering, action-mode click interaction (set origin/destination/waypoint, remove marker, vehicle simulation), route drawing (GeoJSON layer), info panel display.
 
-**Backend responsibilities:** coordinate validation, Mapbox API proxy, response formatting.
+**Backend responsibilities:** coordinate + waypoint validation, Mapbox API proxy, response formatting.
 
 **Token separation:**
 - Frontend uses `VITE_MAPBOX_PUBLIC_TOKEN` (`pk.*`) — map rendering only
 - Backend uses `MAPBOX_SECRET_TOKEN` (`sk.*`) — Directions API proxy
 
-**Cost considerations:** Route fetched only after two points selected — one request per route. No polling.
+**Cost considerations:** Route fetched only when origin and destination are set — one request per route change. No polling.
 
 **Straight-line vs real-road:** `MapView` shows straight-line distance (Haversine). `RouteView` fetches real road distance and drive time from Mapbox.
+
+**Vehicle simulation:** `useVehicleSimulation` hook animates a marker along the fetched route at 1×/2×/4× speed with per-frame bearing calculation. Runs entirely client-side — no extra API calls.
 
 ## Learning Flow
 

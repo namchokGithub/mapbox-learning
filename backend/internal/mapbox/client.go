@@ -2,6 +2,7 @@ package mapbox
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -19,6 +20,12 @@ type DirectionsRoute struct {
 	Distance float64            `json:"distance"`
 	Duration float64            `json:"duration"`
 	Geometry DirectionsGeometry `json:"geometry"`
+}
+
+// Coordinate is an ordered longitude/latitude pair for route building.
+type Coordinate struct {
+	Lng float64
+	Lat float64
 }
 
 type directionsResponse struct {
@@ -39,10 +46,17 @@ func NewClient(token string) *Client {
 	}
 }
 
-// GetDirections fetches the driving route between two coordinate pairs.
+// GetDirections fetches route for origin -> waypoints -> destination chain.
 // Returns the first route from the Mapbox response.
-func (c *Client) GetDirections(fromLng, fromLat, toLng, toLat float64) (*DirectionsRoute, error) {
-	coords := fmt.Sprintf("%f,%f;%f,%f", fromLng, fromLat, toLng, toLat)
+func (c *Client) GetDirections(coords []Coordinate) (*DirectionsRoute, error) {
+	if len(coords) < 2 {
+		return nil, fmt.Errorf("at least origin and destination are required")
+	}
+
+	parts := make([]string, 0, len(coords))
+	for _, coord := range coords {
+		parts = append(parts, fmt.Sprintf("%f,%f", coord.Lng, coord.Lat))
+	}
 
 	var result directionsResponse
 	resp, err := c.http.R().
@@ -52,7 +66,7 @@ func (c *Client) GetDirections(fromLng, fromLat, toLng, toLat float64) (*Directi
 			"access_token": c.token,
 		}).
 		SetResult(&result).
-		Get(fmt.Sprintf("/directions/v5/mapbox/driving/%s", coords))
+		Get(fmt.Sprintf("/directions/v5/mapbox/driving/%s", strings.Join(parts, ";")))
 
 	if err != nil {
 		return nil, fmt.Errorf("mapbox request failed: %w", err)
