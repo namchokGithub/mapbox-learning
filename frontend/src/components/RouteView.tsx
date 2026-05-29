@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import carTopViewImage from "../assets/car-top-view.png";
 import { ActionModePanel } from "./route-playground/ActionModePanel";
 import { MockGpsPanel } from "./route-playground/MockGpsPanel";
 import { VehicleSimulationPanel } from "./route-playground/VehicleSimulationPanel";
@@ -18,6 +19,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
 const ROUTE_SOURCE_ID = "route-source";
 const ROUTE_LAYER_ID = "route-layer";
 const DEFAULT_CENTER: LngLatTuple = [100.5018, 13.7563];
+const VEHICLE_ROTATION_OFFSET_DEG = 180;
 const EMPTY_ROUTE_DATA = {
   type: "FeatureCollection" as const,
   features: [],
@@ -45,31 +47,27 @@ export function RouteView({ onBack }: RouteViewProps) {
   const originRef = useRef<MarkerPoint | null>(null);
   const destinationRef = useRef<MarkerPoint | null>(null);
   const waypointsRef = useRef<MarkerPoint[]>([]);
-  const teleportRef = useRef<(coordinate: LngLatTuple, snapToRoute?: boolean) => void>(
-    () => {},
-  );
+  const teleportRef = useRef<
+    (coordinate: LngLatTuple, snapToRoute?: boolean) => void
+  >(() => {});
 
   const [mode, setMode] = useState<ActionMode>("select");
   const [origin, setOrigin] = useState<MarkerPoint | null>(null);
   const [destination, setDestination] = useState<MarkerPoint | null>(null);
   const [waypoints, setWaypoints] = useState<MarkerPoint[]>([]);
   const [routeInfo, setRouteInfo] = useState<RouteInfo>(INITIAL_ROUTE_INFO);
-  const [routeData, setRouteData] = useState<DirectionsApiResponse | null>(null);
-  const activeRouteData = origin && destination ? routeData : null;
-  const activeRouteInfo = origin && destination ? routeInfo : INITIAL_ROUTE_INFO;
-
-  const {
-    simulation,
-    start,
-    pause,
-    reset,
-    replay,
-    setSpeed,
-    teleportTo,
-  } = useVehicleSimulation(
-    activeRouteData?.geometry ?? null,
-    activeRouteData?.durationSeconds ?? null,
+  const [routeData, setRouteData] = useState<DirectionsApiResponse | null>(
+    null,
   );
+  const activeRouteData = origin && destination ? routeData : null;
+  const activeRouteInfo =
+    origin && destination ? routeInfo : INITIAL_ROUTE_INFO;
+
+  const { simulation, start, pause, reset, replay, setSpeed, teleportTo } =
+    useVehicleSimulation(
+      activeRouteData?.geometry ?? null,
+      activeRouteData?.durationSeconds ?? null,
+    );
 
   useEffect(() => {
     modeRef.current = mode;
@@ -153,14 +151,23 @@ export function RouteView({ onBack }: RouteViewProps) {
           );
           return;
         case "remove-marker":
-          removeNearestMarker(map, clicked, originRef.current, destinationRef.current, waypointsRef.current, {
-            onRemoveOrigin: () => setOrigin(null),
-            onRemoveDestination: () => setDestination(null),
-            onRemoveWaypoint: (waypointId) =>
-              setWaypoints((prev) =>
-                normalizeWaypoints(prev.filter((waypoint) => waypoint.id !== waypointId)),
-              ),
-          });
+          removeNearestMarker(
+            map,
+            clicked,
+            originRef.current,
+            destinationRef.current,
+            waypointsRef.current,
+            {
+              onRemoveOrigin: () => setOrigin(null),
+              onRemoveDestination: () => setDestination(null),
+              onRemoveWaypoint: (waypointId) =>
+                setWaypoints((prev) =>
+                  normalizeWaypoints(
+                    prev.filter((waypoint) => waypoint.id !== waypointId),
+                  ),
+                ),
+            },
+          );
           return;
         case "vehicle-simulation":
           teleportRef.current(clicked, false);
@@ -208,12 +215,16 @@ export function RouteView({ onBack }: RouteViewProps) {
     if (!map) return;
 
     if (!activeRouteData) {
-      const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | null;
+      const source = map.getSource(
+        ROUTE_SOURCE_ID,
+      ) as mapboxgl.GeoJSONSource | null;
       source?.setData(EMPTY_ROUTE_DATA);
       return;
     }
 
-    const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | null;
+    const source = map.getSource(
+      ROUTE_SOURCE_ID,
+    ) as mapboxgl.GeoJSONSource | null;
     source?.setData({
       type: "Feature",
       geometry: {
@@ -257,7 +268,12 @@ export function RouteView({ onBack }: RouteViewProps) {
     }
 
     const markerElement = vehicleMarkerRef.current.getElement();
-    markerElement.style.transform = `rotate(${simulation.bearing}deg)`;
+    const rotator = markerElement.querySelector<HTMLElement>(
+      "[data-vehicle-rotator]",
+    );
+    if (rotator) {
+      rotator.style.transform = `rotate(${VEHICLE_ROTATION_OFFSET_DEG - simulation.bearing}deg)`;
+    }
   }, [simulation.bearing, simulation.currentCoordinate]);
 
   useEffect(() => {
@@ -268,7 +284,11 @@ export function RouteView({ onBack }: RouteViewProps) {
       return;
     }
 
-    const requestKey = buildRouteRequestKey(originPoint, destinationPoint, waypoints);
+    const requestKey = buildRouteRequestKey(
+      originPoint,
+      destinationPoint,
+      waypoints,
+    );
     const cached = routeCacheRef.current.get(requestKey);
     if (cached) {
       setRouteData(cached);
@@ -291,8 +311,14 @@ export function RouteView({ onBack }: RouteViewProps) {
 
     const loadRoute = async () => {
       try {
-        const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-        const url = buildDirectionsUrl(base, originPoint, destinationPoint, waypoints);
+        const base =
+          import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+        const url = buildDirectionsUrl(
+          base,
+          originPoint,
+          destinationPoint,
+          waypoints,
+        );
         const response = await fetch(url, { signal: controller.signal });
 
         if (!response.ok) {
@@ -342,7 +368,7 @@ export function RouteView({ onBack }: RouteViewProps) {
         style={{
           position: "absolute",
           top: 16,
-          right: 16,
+          left: 16,
           zIndex: 10,
           padding: "9px 16px",
           borderRadius: 10,
@@ -352,8 +378,7 @@ export function RouteView({ onBack }: RouteViewProps) {
           fontWeight: 700,
           cursor: "pointer",
           boxShadow: "0 10px 30px rgba(15,23,42,0.16)",
-        }}
-      >
+        }}>
         ← Back
       </button>
 
@@ -373,7 +398,9 @@ export function RouteView({ onBack }: RouteViewProps) {
         mode={mode}
         waypoints={waypoints}
         onModeChange={setMode}
-        onMoveVehicleToWaypoint={(waypoint) => teleportTo(waypoint.lngLat, true)}
+        onMoveVehicleToWaypoint={(waypoint) =>
+          teleportTo(waypoint.lngLat, true)
+        }
         onMoveVehicleToOrigin={() => {
           if (origin) teleportTo(origin.lngLat, true);
         }}
@@ -455,16 +482,48 @@ function createPointElement(label: string, backgroundColor: string) {
 
 function createVehicleElement() {
   const el = document.createElement("div");
-  el.textContent = "➤";
-  el.style.width = "28px";
-  el.style.height = "28px";
-  el.style.display = "flex";
-  el.style.alignItems = "center";
-  el.style.justifyContent = "center";
-  el.style.fontSize = "22px";
-  el.style.color = "#f97316";
-  el.style.filter = "drop-shadow(0 4px 10px rgba(15,23,42,0.35))";
+  el.style.width = "42px";
+  el.style.height = "42px";
+  el.style.position = "relative";
+  el.style.pointerEvents = "none";
   el.style.transformOrigin = "50% 50%";
+
+  const shadow = document.createElement("div");
+  shadow.style.position = "absolute";
+  shadow.style.left = "50%";
+  shadow.style.top = "58%";
+  shadow.style.width = "24px";
+  shadow.style.height = "12px";
+  shadow.style.borderRadius = "999px";
+  shadow.style.background =
+    "radial-gradient(circle, rgba(15,23,42,0.34) 0%, rgba(15,23,42,0.16) 58%, rgba(15,23,42,0) 100%)";
+  shadow.style.transform = "translate(-50%, -50%) scaleY(0.82)";
+  shadow.style.filter = "blur(3px)";
+
+  const rotator = document.createElement("div");
+  rotator.dataset.vehicleRotator = "true";
+  rotator.style.position = "absolute";
+  rotator.style.inset = "0";
+  rotator.style.display = "flex";
+  rotator.style.alignItems = "center";
+  rotator.style.justifyContent = "center";
+  rotator.style.transformOrigin = "50% 50%";
+
+  const image = document.createElement("img");
+  image.src = carTopViewImage;
+  image.alt = "Vehicle";
+  image.style.width = "100%";
+  image.style.height = "100%";
+  image.style.objectFit = "contain";
+  image.style.transform = "perspective(160px) rotateX(24deg) translateY(-2px)";
+  image.style.transformOrigin = "50% 62%";
+  image.style.filter =
+    "drop-shadow(0 6px 10px rgba(15,23,42,0.24)) saturate(1.04)";
+  image.draggable = false;
+
+  rotator.appendChild(image);
+  el.appendChild(shadow);
+  el.appendChild(rotator);
   return el;
 }
 
@@ -544,12 +603,18 @@ function removeNearestMarker(
     });
   }
   waypoints.forEach((waypoint) => {
-    candidates.push({ type: "waypoint", id: waypoint.id, lngLat: waypoint.lngLat });
+    candidates.push({
+      type: "waypoint",
+      id: waypoint.id,
+      lngLat: waypoint.lngLat,
+    });
   });
 
-  let nearest:
-    | { type: "origin" | "destination" | "waypoint"; id: string; distance: number }
-    | null = null;
+  let nearest: {
+    type: "origin" | "destination" | "waypoint";
+    id: string;
+    distance: number;
+  } | null = null;
 
   candidates.forEach((candidate) => {
     const candidatePixel = map.project(candidate.lngLat);

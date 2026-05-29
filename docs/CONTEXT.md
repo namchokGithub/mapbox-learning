@@ -66,6 +66,8 @@ mapbox-learning/
 │   └── CONTEXT.md              ← this file
 ├── frontend/                   ← Vite React TypeScript app
 │   ├── src/
+│   │   ├── assets/
+│   │   │   └── car-top-view.png            ← vehicle marker image (top-down PNG)
 │   │   ├── components/
 │   │   │   ├── MapView.tsx     ← straight-line distance measurement
 │   │   │   ├── RouteView.tsx   ← real-road routing, waypoints, action modes, simulation

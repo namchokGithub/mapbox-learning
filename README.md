@@ -110,7 +110,7 @@ Browser click (lat/lng)
 
 **Straight-line vs real-road:** `MapView` shows straight-line distance (Haversine). `RouteView` fetches real road distance and drive time from Mapbox.
 
-**Vehicle simulation:** `useVehicleSimulation` hook animates a marker along the fetched route at 1×/2×/4× speed with per-frame bearing calculation. Runs entirely client-side — no extra API calls.
+**Vehicle simulation:** `useVehicleSimulation` hook animates a top-down car marker along the fetched route at 1×/2×/4× speed with per-frame bearing calculation. Marker uses a PNG asset with a perspective tilt and drop-shadow; rotation is applied to an inner element so bearing and position transforms don't interfere. Runs entirely client-side — no extra API calls.
 
 ## Learning Flow
 

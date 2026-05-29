@@ -14,15 +14,12 @@ const MODES: Array<{ value: ActionMode; label: string }> = [
   { value: "vehicle-simulation", label: "Vehicle Simulation" },
 ];
 
-export function ActionModePanel({
-  mode,
-  onModeChange,
-}: ActionModePanelProps) {
+export function ActionModePanel({ mode, onModeChange }: ActionModePanelProps) {
   return (
     <div
       style={{
         position: "absolute",
-        top: 16,
+        top: 64,
         left: 16,
         zIndex: 10,
         width: "min(360px, calc(100% - 32px))",
@@ -32,8 +29,7 @@ export function ActionModePanel({
         boxShadow: "0 10px 30px rgba(15,23,42,0.16)",
         color: "#0f172a",
         boxSizing: "border-box",
-      }}
-    >
+      }}>
       <div style={{ fontWeight: 700, marginBottom: 10 }}>
         Navigation Playground
       </div>
@@ -51,8 +47,7 @@ export function ActionModePanel({
               cursor: "pointer",
               color: mode === item.value ? "#ffffff" : "#334155",
               backgroundColor: mode === item.value ? "#0f766e" : "#e2e8f0",
-            }}
-          >
+            }}>
             {item.label}
           </button>
         ))}
