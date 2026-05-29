@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -39,7 +40,15 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		// Dev CORS: allow local frontend hosts/ports without opening public wildcard access.
+		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			return origin == "" ||
+				strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				strings.HasPrefix(origin, "http://192.168.") ||
+				strings.HasPrefix(origin, "http://10.") ||
+				strings.HasPrefix(origin, "http://172.")
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		AllowCredentials: false,

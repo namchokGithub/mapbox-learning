@@ -129,7 +129,7 @@ export function MapView({ center = DEFAULT_CENTER, zoom = 10 }: MapViewProps) {
       pointBMarkerRef.current?.remove();
       pointBRef.current = point;
       pointBMarkerRef.current = new mapboxgl.Marker({
-        color: "rgb(251, 255, 14)",
+        color: "rgb(77, 175, 32)",
       })
         .setLngLat(point)
         .addTo(map);
@@ -216,8 +216,7 @@ export function MapView({ center = DEFAULT_CENTER, zoom = 10 }: MapViewProps) {
       <div
         style={{
           position: "absolute",
-          top: 16,
-          left: 16,
+          bottom: 16,
           right: 16,
           zIndex: 1,
           width: "min(320px, calc(100% - 32px))",
@@ -229,7 +228,6 @@ export function MapView({ center = DEFAULT_CENTER, zoom = 10 }: MapViewProps) {
           fontSize: 14,
           lineHeight: 1.5,
           boxSizing: "border-box",
-          marginLeft: "auto",
         }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Distance Measure</div>
         <div>

@@ -66,12 +66,16 @@ export function RouteView({ onBack }: RouteViewProps) {
     mapRef.current = map;
 
     const clearRoute = () => {
-      const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | null;
+      const source = map.getSource(
+        ROUTE_SOURCE_ID,
+      ) as mapboxgl.GeoJSONSource | null;
       source?.setData({ type: "FeatureCollection", features: [] });
     };
 
     const drawRoute = (geometry: LineStringGeometry) => {
-      const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | null;
+      const source = map.getSource(
+        ROUTE_SOURCE_ID,
+      ) as mapboxgl.GeoJSONSource | null;
       source?.setData({
         type: "Feature",
         geometry: { type: "LineString", coordinates: geometry.coordinates },
@@ -122,7 +126,8 @@ export function RouteView({ onBack }: RouteViewProps) {
       setRouteInfo((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
-        const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+        const base =
+          import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
         const url =
           `${base}/api/directions` +
           `?fromLng=${pointA.lng}&fromLat=${pointA.lat}` +
@@ -131,8 +136,12 @@ export function RouteView({ onBack }: RouteViewProps) {
         const resp = await fetch(url);
 
         if (!resp.ok) {
-          const body = await resp.json().catch(() => ({ error: "request failed" }));
-          throw new Error((body as { error?: string }).error ?? "request failed");
+          const body = await resp
+            .json()
+            .catch(() => ({ error: "request failed" }));
+          throw new Error(
+            (body as { error?: string }).error ?? "request failed",
+          );
         }
 
         const data = (await resp.json()) as DirectionsApiResponse;
@@ -185,14 +194,20 @@ export function RouteView({ onBack }: RouteViewProps) {
         clearMarkers();
         clearRoute();
         placePointA(clicked);
-        setRouteInfo({ ...INITIAL_ROUTE_INFO, pointA: [clicked.lng, clicked.lat] });
+        setRouteInfo({
+          ...INITIAL_ROUTE_INFO,
+          pointA: [clicked.lng, clicked.lat],
+        });
         return;
       }
 
       // First click: set point A
       if (!pointARef.current) {
         placePointA(clicked);
-        setRouteInfo({ ...INITIAL_ROUTE_INFO, pointA: [clicked.lng, clicked.lat] });
+        setRouteInfo({
+          ...INITIAL_ROUTE_INFO,
+          pointA: [clicked.lng, clicked.lat],
+        });
         return;
       }
 
@@ -233,7 +248,7 @@ export function RouteView({ onBack }: RouteViewProps) {
         style={{
           position: "absolute",
           top: 16,
-          right: 16,
+          left: 16,
           zIndex: 10,
           padding: "8px 16px",
           borderRadius: 8,
@@ -244,8 +259,7 @@ export function RouteView({ onBack }: RouteViewProps) {
           cursor: "pointer",
           fontSize: 14,
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        }}
-      >
+        }}>
         ← Back
       </button>
 
@@ -253,8 +267,8 @@ export function RouteView({ onBack }: RouteViewProps) {
       <div
         style={{
           position: "absolute",
-          top: 16,
-          left: 16,
+          bottom: 16,
+          right: 16,
           zIndex: 1,
           width: "min(280px, calc(100% - 100px))",
           padding: "12px 14px",
@@ -264,8 +278,7 @@ export function RouteView({ onBack }: RouteViewProps) {
           color: "#0f172a",
           fontSize: 14,
           lineHeight: 1.6,
-        }}
-      >
+        }}>
         <div style={{ fontWeight: 700, marginBottom: 6 }}>Route Planner</div>
         <div>
           A:{" "}
@@ -287,29 +300,32 @@ export function RouteView({ onBack }: RouteViewProps) {
         )}
 
         {routeInfo.error && (
-          <div style={{ marginTop: 8, color: "#ef4444" }}>{routeInfo.error}</div>
-        )}
-
-        {!routeInfo.loading && !routeInfo.error && routeInfo.distanceKm !== null && (
-          <div
-            style={{
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: "1px solid #e2e8f0",
-            }}
-          >
-            <div style={{ fontWeight: 600 }}>
-              Distance: {routeInfo.distanceKm.toFixed(2)} km
-            </div>
-            <div style={{ fontWeight: 600 }}>
-              ETA:{" "}
-              {routeInfo.durationMinutes !== null
-                ? routeInfo.durationMinutes.toFixed(1)
-                : "-"}{" "}
-              min
-            </div>
+          <div style={{ marginTop: 8, color: "#ef4444" }}>
+            {routeInfo.error}
           </div>
         )}
+
+        {!routeInfo.loading &&
+          !routeInfo.error &&
+          routeInfo.distanceKm !== null && (
+            <div
+              style={{
+                marginTop: 8,
+                paddingTop: 8,
+                borderTop: "1px solid #e2e8f0",
+              }}>
+              <div style={{ fontWeight: 600 }}>
+                Distance: {routeInfo.distanceKm.toFixed(2)} km
+              </div>
+              <div style={{ fontWeight: 600 }}>
+                ETA:{" "}
+                {routeInfo.durationMinutes !== null
+                  ? routeInfo.durationMinutes.toFixed(1)
+                  : "-"}{" "}
+                min
+              </div>
+            </div>
+          )}
 
         {routeInfo.pointA && routeInfo.pointB && !routeInfo.loading && (
           <div style={{ marginTop: 6, fontSize: 12, color: "#94a3b8" }}>
